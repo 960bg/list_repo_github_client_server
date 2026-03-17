@@ -1,0 +1,24 @@
+{
+  "name": "list_repo_github_client_server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@eslint/css": "1.0.0",
+    "@eslint/js": "10.0.1",
+    "@eslint/json": "1.1.0",
+    "@eslint/markdown": "7.5.1",
+    "eslint": "10.0.3",
+    "eslint-config-prettier": "10.1.8",
+    "eslint-plugin-prettier": "5.5.5",
+    "globals": "17.4.0",
+    "prettier": "3.8.1"
+  }
+}
