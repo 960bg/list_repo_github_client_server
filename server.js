@@ -29,17 +29,28 @@ const server = http.createServer(async function (req, res) {
     res.end('<h1>Главная страница</h1>');
   } else if (req.url === '/' && req.method === 'POST') {
     // Чтение данных POST-запроса
-    let body = '';
+    let bodyRequest = '';
+    //  const bodyRequest = {
+    //   username: inputUserNameHTML.value,
+    //   page: 1,
+    // };
     req.on('data', (chunk) => {
-      body += chunk.toString();
-      console.log('[server]:  body', body);
+      bodyRequest += chunk.toString();
+      console.log('[server]:  body', bodyRequest);
     });
-    req.on('end', () => {
+    req.on('end', async () => {
       res.statusCode = 200;
-      console.log(`Получены данные: ${body}`);
-      getRepos(body).then((data) => {
-        res.end(JSON.stringify(data));
-      });
+      console.log(`Получены данные: ${bodyRequest}`);
+
+      // getRepos(body).then((data) => {
+      //   res.end(JSON.stringify(data));
+      // });
+
+      const repos = await getRepos(bodyRequest);
+      // const countPage = 1;
+      // const reposArr = JSON.parse(repos);
+
+      res.end(repos);
     });
   } else {
     res.statusCode = 404;
@@ -52,17 +63,13 @@ server.listen(port, '127.0.0.1', function () {
 });
 
 // получить список репо из github по имени пользователя
-function getRepos(username) {
+function getRepos(body) {
   return new Promise((resolve, reject) => {
-    github.getRepos(username, (err, repos) => {
+    function callbackGetRepos(err, repos) {
       try {
         if (err) {
           return console.error(err.message);
         }
-
-        repos.forEach((repo, index) => {
-          console.log(`[${index + 1}]`, repo.name);
-        });
 
         return resolve(repos);
       } catch (error) {
@@ -71,6 +78,22 @@ function getRepos(username) {
         console.error('Ошибка: ', err);
         reject(error);
       }
-    });
+    }
+
+    // разбор тела запроса на имя пользователя и страницу для пагинации
+    let { username, page } = JSON.parse(body);
+    let pathPage;
+    console.log('username', username);
+    console.log('ДО page', page);
+
+    if (page !== 1) {
+      pathPage = `?page=${page}`;
+    } else {
+      pathPage = '';
+    }
+    console.log('После pathPage', pathPage);
+
+    // получить список репо из github по имени пользователя
+    github.getRepos(username, callbackGetRepos, pathPage);
   });
 }

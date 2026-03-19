@@ -2,14 +2,18 @@ const https = require('https');
 
 exports.getRepos = getRepos;
 
-function getRepos(username, fnDone) {
+function getRepos(username, fnDone, page = '') {
   const option = {
     hostname: 'api.github.com',
-    path: `/users/${username}/repos`,
+    path: `/users/${username}/repos${page}`,
+    // path: `/users/${username}/repos?page=2`,
     headers: {
       'User-Agent': 'github-app',
     },
   };
+
+  console.log(`option`);
+  console.log(`${option.path}конец`);
 
   if (!username) {
     return fnDone(
@@ -21,34 +25,41 @@ function getRepos(username, fnDone) {
 
   try {
     const request = https.get(option, (res) => {
-      console.log('Код ответа сервера:', res.statusCode);
-
-      if (res.statusCode !== 200) {
-        // return fnDone(new Error('Ошибка работы с сервером'));
-        fnDone(new Error('Ошибка работы с сервером: statusCode !== 200 '));
-
-        return process.exit(0);
-      }
-
       res.setEncoding('utf-8');
 
       let body = '';
-
       res.on('data', (chunk) => (body += chunk));
       res.on('end', () => {
-        // console.log('body', body);
-        fnDone(null, JSON.parse(body));
+        console.log('Код ответа сервера api.github.com:', res.statusCode);
+        console.log(
+          'Сообщение сервера api.github.com statusMessage:',
+          res.statusMessage
+        );
+        const responseGit = {
+          statusCode: res.statusCode,
+          statusMessage: res.statusMessage,
+          repos: body,
+        };
+
+        // console.log('body');
+        // console.log(body);
+
+        fnDone(null, JSON.stringify(responseGit));
       });
     });
 
     request.on('error', (error) => {
       fnDone(
-        new Error(`Ошибка в работе сервера: ${error.name} \n ${error.message}`)
+        new Error(
+          `Ошибка в работе api.github.com сервера: ${error.name} \n ${error.message}`
+        )
       );
     });
   } catch (error) {
     fnDone(
-      new Error(`Ошибка работы сервера: ${error.name} \n ${error.message}`)
+      new Error(
+        `Ошибка работы api.github.com сервера: ${error.name} \n ${error.message}`
+      )
     );
   }
 }
