@@ -1,3 +1,16 @@
+// todo
+
+// - проработать проверку ввода имени пользователя
+// - создание карточек с именем пользователя и списком репо
+// - фото пользователя на карточке
+// - рейтинг по кол-ву репо среди запрошенных пользователей гитхаб
+// - авторизация
+// - авторизация с капчей
+// - сохранение запрошенных пользователей гитхаб и их репо
+// - оплата картой
+
+//
+
 main();
 
 async function main() {
@@ -19,6 +32,10 @@ function request(data = { username: '', page: 1 }) {
         body: JSON.stringify(data),
       })
         .then((response) => {
+          if (!response.ok) {
+            // console.error('Ошибка запроса на наш сервер', error);
+            throw new Error(`Ошибка сервера: ${response.status}`);
+          }
           console.log('response', response);
           const text = response.text();
           console.log('response.text()', text);
@@ -28,10 +45,10 @@ function request(data = { username: '', page: 1 }) {
         })
         .then((done) => {
           resolve(done);
-          console.log('resolve(done);', done);
+          // console.log('resolve(done);', done);
         });
     } catch (error) {
-      console.error('Ошибка запроса', error);
+      console.error('Ошибка запроса на наш сервер', error);
       reject(error);
     }
   });
@@ -96,8 +113,16 @@ async function getListReposGithub(bodyRequest) {
   return responseGit;
 }
 
-// вставить список репо из гихаб
+/**
+ * вставить список репо из гихаб
+ * @param {string} username - имя пользлвателя гитхаб
+ */
 async function insertListRepoGithub(username) {
+  /**
+   * @typedef {Object} bodyRequest - объект для запроса на сервер, передает имя пользователя и номер нужной страницы
+   * @property {string} username - username,
+   * @property {number} page - номер страницы,
+   */
   const bodyRequest = {
     username: username,
     page: 1,
@@ -107,39 +132,22 @@ async function insertListRepoGithub(username) {
   // очистить список репо
   listRepoHTML.innerHTML = '';
 
-  // запросить список репо из гитхаб
-  const responseGit = await getListReposGithub(bodyRequest);
-
-  // проверить ответ сервера gitHub
-  if (!checkRequestGithub(responseGit)) {
-    listRepoHTML.append(
-      createLiElement(`Код ответа сервера gitHub: ${responseGit.statusCode}`)
-    );
-    listRepoHTML.append(
-      createLiElement(
-        `Сообщение ответа сервера gitHub: ${responseGit.statusMessage}`
-      )
-    );
-    return;
-  }
-
-  // проверить содержимое листрепо на наличие репо и кол-во репо
-  if (!checkListRepos(responseGit)) {
-    listRepoHTML.append(createLiElement('Публичные репозитории не найдены'));
-    console.log('Публичных репозиториев нет');
-    return;
-  }
-
   // добавление списка репозиториев на страницу
-  addListRepoOnPage(responseGit, bodyRequest, listRepoHTML);
+  addListRepoOnPage(bodyRequest, listRepoHTML);
 }
 
 // проверить содержимое листрепо на наличие репо и кол-во репо
 function checkListRepos(responseGit) {
-  if (responseGit.repos.length === 0) {
+  try {
+    if (responseGit.repos.length === 0) {
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error('Ошибка при провеоке содержимого списка репозиториев', err);
+
     return false;
   }
-  return true;
 }
 
 function checkRequestGithub(responseGit) {
@@ -150,41 +158,53 @@ function checkRequestGithub(responseGit) {
   return true;
 }
 
-// добавление списка репозиториев на страницу
-function addListRepoOnPage(responseGit, bodyRequest, htmlEl) {
-  console.log('responseGit');
-  console.log(responseGit);
-  console.log('responseGit.repos');
-  console.log(responseGit.repos);
-
-  // добавление списка репозиториев на страницу
-  addListRepoInHTML(responseGit, htmlEl);
-
+/**
+ * Получение и Добавление списка репозиториев на страницу
+ * @param {bodyRequest} bodyRequest - объект для запроса на сервер, передает имя пользователя и номер нужной страницы
+ * @param {HTMLElement} htmlEl - html элемент куда вставить список репозиториев
+ */
+async function addListRepoOnPage(bodyRequest, htmlEl) {
   // получение новых страниц (1 стр = 30 записям) репозиториев
   // если в первой стр вернулось 30 записей то может существовать и другие страницы
   // Частный случай если у пользователя всего 30 репо
   // тогда в первой странице вернется 30 репо а при
   // запросе на след страницу список будет пуст
-  let lengthRepos = responseGit.repos.length;
-  console.log('lengthRepos ===', lengthRepos);
+  // console.log('lengthRepos ===', lengthRepos);
 
-  for (let i = 0; i < 4; i++) {
-    if (lengthRepos === 30) {
-      bodyRequest.page += 1;
-      console.log('Страница', bodyRequest.page);
+  // let lengthRepos = responseGit.repos.length;
+  let lengthRepos;
+  do {
+    // запросить список репо из гитхаб
+    let responseGit = await getListReposGithub(bodyRequest);
+    lengthRepos = responseGit.repos.length;
 
-      let tempRepoResponseGit = getListReposGithub(bodyRequest);
+    console.log('Страница', bodyRequest.page);
+    console.log('lengthRepos', lengthRepos);
 
-      lengthRepos = tempRepoResponseGit.repos.length;
-      console.log('tempRepoResponseGit.repos');
-      console.log(tempRepoResponseGit.repos);
-
-      console.log('lengthRepos', lengthRepos);
-
-      // добавление списка репозиториев на страницу
-      addListRepoInHTML(tempRepoResponseGit, htmlEl);
+    // проверить ответ сервера gitHub
+    if (!checkRequestGithub(responseGit)) {
+      htmlEl.append(
+        createLiElement(`Код ответа сервера gitHub: ${responseGit.statusCode}`)
+      );
+      htmlEl.append(
+        createLiElement(
+          `Сообщение ответа сервера gitHub: ${responseGit.statusMessage}`
+        )
+      );
+      return;
     }
-  }
+
+    // проверить содержимое листрепо на наличие репо и кол-во репо
+    if (!checkListRepos(responseGit) && bodyRequest.page === 1) {
+      htmlEl.append(createLiElement('Публичные репозитории не найдены'));
+      console.log('Публичных репозиториев нет');
+      return;
+    }
+
+    // добавление списка репозиториев на страницу
+    addListRepoInHTML(responseGit, htmlEl);
+    bodyRequest.page += 1;
+  } while (lengthRepos === 30);
 }
 
 function addListRepoInHTML(responseGit, htmlEl) {
