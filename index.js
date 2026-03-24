@@ -23,35 +23,27 @@ async function main() {
 }
 
 // запрос серверу
-function request(data = { username: '', page: 1 }) {
-  return new Promise((resolve, reject) => {
-    try {
-      fetch('http://localhost:3000', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      })
-        .then((response) => {
-          if (!response.ok) {
-            // console.error('Ошибка запроса на наш сервер', error);
-            throw new Error(`Ошибка сервера: ${response.status}`);
-          }
-          console.log('response', response);
-          const text = response.text();
-          console.log('response.text()', text);
+async function request(data = { username: '', page: 1 }) {
+  const URL = 'http://localhost:3000';
+  const OPTIONS = {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  };
+  // return new Promise( async (resolve, reject) => {
+  try {
+    const response = await fetch(URL, OPTIONS);
 
-          // return response;
-          return text;
-        })
-        .then((done) => {
-          resolve(done);
-          // console.log('resolve(done);', done);
-        });
-    } catch (error) {
-      console.error('Ошибка запроса на наш сервер', error);
-      reject(error);
+    if (!response.ok) {
+      throw new Error(
+        `Ошибка запроса на наш сервер: ${response.status},  headers: ${response.headers}`
+      );
     }
-  });
+    const repos = await response.text();
+    return repos;
+  } catch (error) {
+    console.error('Ошибка запроса на наш сервер', error);
+  }
 }
 
 function createLiElement(text) {

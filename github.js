@@ -1,9 +1,11 @@
 const https = require('https');
 
 exports.getRepos = getRepos;
+exports.getRepos2 = getRepos2;
 
+// запрос репозиториев написан с использованием  https.get и коллбеков
 function getRepos(username, fnDone, page = '') {
-  const option = {
+  const options = {
     hostname: 'api.github.com',
     path: `/users/${username}/repos${page}`,
     // path: `/users/${username}/repos?page=2`,
@@ -12,8 +14,8 @@ function getRepos(username, fnDone, page = '') {
     },
   };
 
-  console.log(`option`);
-  console.log(`${option.path}конец`);
+  console.log(`options`);
+  console.log(`${options.path}конец`);
 
   if (!username) {
     return fnDone(
@@ -24,7 +26,7 @@ function getRepos(username, fnDone, page = '') {
   console.log('username', username);
 
   try {
-    const request = https.get(option, (res) => {
+    const request = https.get(options, (res) => {
       res.setEncoding('utf-8');
 
       let body = '';
@@ -60,6 +62,44 @@ function getRepos(username, fnDone, page = '') {
       new Error(
         `Ошибка работы api.github.com сервера: ${error.name} \n ${error.message}`
       )
+    );
+  }
+}
+
+// запрос репозиториев написан с использованием  fetch
+async function getRepos2(username, page = '') {
+  const options = {
+    hostname: 'api.github.com',
+    path: `/users/${username}/repos${page}`,
+    // path: `/users/${username}/repos?page=2`,
+    headers: {
+      'User-Agent': 'github-app',
+    },
+  };
+
+  const URL = `https://${options.hostname}${options.path}`;
+
+  if (!username) {
+    console.error(
+      'Не указано имя пользователя в аргументах при вызове программы'
+    );
+  }
+
+  try {
+    // const response = await fetch(URL);
+    const response = await fetch(URL, options);
+
+    const repos = await response.text();
+
+    const responseGit = {
+      statusCode: response.status,
+      statusMessage: response.statusText,
+      repos: repos,
+    };
+    return JSON.stringify(responseGit);
+  } catch (error) {
+    console.error(
+      `Ошибка работы api.github.com сервера: ${error.name} \n ${error.message}`
     );
   }
 }

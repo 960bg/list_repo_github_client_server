@@ -46,7 +46,8 @@ const server = http.createServer(async function (req, res) {
       //   res.end(JSON.stringify(data));
       // });
 
-      const repos = await getRepos(bodyRequest);
+      // const repos = await getRepos(bodyRequest);
+      const repos = await getRepos2(bodyRequest);
       // const countPage = 1;
       // const reposArr = JSON.parse(repos);
 
@@ -96,4 +97,28 @@ function getRepos(body) {
     // получить список репо из github по имени пользователя
     github.getRepos(username, callbackGetRepos, pathPage);
   });
+}
+
+// получить список репо из github по имени пользователя
+async function getRepos2(body) {
+  // разбор тела запроса на имя пользователя и страницу для пагинации
+  let { username, page } = JSON.parse(body);
+  let pathPage;
+  console.log('username', username);
+  console.log('ДО page', page);
+
+  if (page !== 1) {
+    pathPage = `?page=${page}`;
+  } else {
+    pathPage = '';
+  }
+  console.log('После pathPage', pathPage);
+
+  // получить список репо из github по имени пользователя
+  try {
+    return await github.getRepos2(username, pathPage);
+  } catch (error) {
+    console.log('Ошибка в файле app.js github.getRepos');
+    console.error(error);
+  }
 }
